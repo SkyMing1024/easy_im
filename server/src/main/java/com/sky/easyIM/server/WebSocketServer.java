@@ -68,12 +68,11 @@ public class WebSocketServer {
                         ChannelPipeline pipeline = socketChannel.pipeline();
                         // Http编解码
                         pipeline.addLast(new HttpServerCodec());
-                        //
+                        // 分片写入
                         pipeline.addLast(new ChunkedWriteHandler());
                         // 每一帧 64字节
                         pipeline.addLast(new HttpObjectAggregator(64*1024));
-                        // netty自带的处理器， 处理握手协议的返回
-                        //
+                        // netty自带的处理器， 处理websocket握手协议，ping/pong等
                         pipeline.addLast(new WebSocketServerProtocolHandler(contextPath));
                         // 自定义处理器
                         pipeline.addLast(new WebSocketHandler());
