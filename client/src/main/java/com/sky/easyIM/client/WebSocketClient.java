@@ -1,5 +1,6 @@
 package com.sky.easyIM.client;
 
+import com.alibaba.fastjson.JSONObject;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -9,11 +10,13 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.*;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.*;
 import java.net.URI;
 
+@Slf4j
 public class WebSocketClient {
-
     private URI uri;
 
     private Bootstrap bootstrap;
@@ -23,60 +26,51 @@ public class WebSocketClient {
 
     private Channel channel;
 
-    public WebSocketClient(final URI uri) {
+    public WebSocketClient(URI uri) {
         this.uri = uri;
         this.init();
     }
 
-    public void connect() {
-        try {
-            channel = bootstrap.connect(uri.getHost(), uri.getPort()).sync().channel();
-            channelPromise.sync();
-            System.out.println("connected success! and handshake complete!");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 发送数据包
-     * @param action
-     * @param payload
-     */
-    public void send() {
-
-    }
-
-    private void init() {
+    private void init(){
         bootstrap = new Bootstrap();
-        bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-        bootstrap.option(ChannelOption.TCP_NODELAY, true);
+        bootstrap.option(ChannelOption.SO_KEEPALIVE,true);
+        bootstrap.option(ChannelOption.TCP_NODELAY,true);
 
         group = new NioEventLoopGroup();
 
-        bootstrap.group(group).channel(NioSocketChannel.class)
+        bootstrap.group(group)
+                .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
-
                     @Override
-                    protected void initChannel(SocketChannel channel) throws Exception {
-                        ChannelPipeline pipeline = channel.pipeline();
+                    protected void initChannel(SocketChannel socketChannel) throws Exception {
+
+                        ChannelPipeline pipeline = socketChannel.pipeline();
                         pipeline.addLast(new HttpClientCodec());
                         pipeline.addLast(new HttpObjectAggregator(64*1024));
                         pipeline.addLast(new WebSocketHandler(getHandshaker(uri)));
                     }
-
                     private WebSocketClientHandshaker getHandshaker(final URI uri) {
-                        return WebSocketClientHandshakerFactory.newHandshaker(uri,
-                                WebSocketVersion.V13, null, false, null);
+                        return WebSocketClientHandshakerFactory.newHandshaker(uri, WebSocketVersion.V13, null, false, null);
                     }
                 });
+
     }
 
-    private class WebSocketHandler extends SimpleChannelInboundHandler<Object> {
+    public void connect(){
+        try {
+            channel = bootstrap.connect(uri.getHost(), uri.getPort()).sync().channel();
+            channelPromise.sync();
+            log.info("连接成功！ 完成hand shake");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
+    }
+
+    private class WebSocketHandler extends SimpleChannelInboundHandler<Object>{
         private WebSocketClientHandshaker handshaker;
 
-        public WebSocketHandler(final WebSocketClientHandshaker handshaker) {
+        public WebSocketHandler(WebSocketClientHandshaker handshaker) {
             this.handshaker = handshaker;
         }
 
@@ -85,31 +79,45 @@ public class WebSocketClient {
             channelPromise = ctx.newPromise();
         }
 
+
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             this.handshaker.handshake(ctx.channel());
         }
 
         @Override
-        protected void channelRead0(ChannelHandlerContext ctx, Object o) {
-            System.out.println("receive data: " + o + " from address: " + ctx.channel().remoteAddress());
-            if ( !handshaker.isHandshakeComplete() ) {
+        protected void channelRead0(ChannelHandlerContext ctx, Object o) throws Exception {
+            log.info("收到消息：{}, 来自：{}",o,ctx.channel().remoteAddress());
+            if (!handshaker.isHandshakeComplete()){
                 try {
-                    handshaker.finishHandshake(ctx.channel(), (FullHttpResponse) o);
+                    handshaker.finishHandshake(ctx.channel(), ((FullHttpResponse) o));
                     channelPromise.setSuccess();
-                    System.out.println("handshake success!");
-                } catch (WebSocketHandshakeException e) {
+                    log.info("handshake success");
+                }catch (WebSocketHandshakeException e){
                     e.printStackTrace();
                     channelPromise.setFailure(e);
                 }
-                return ;
+                return;
             }
+
             if ( !(o instanceof TextWebSocketFrame) ) {
-                System.out.println("received no text data: " + o);
+                log.warn("收到了错误类型的信息：{}",o);
                 return ;
             }
+
+
             TextWebSocketFrame request = (TextWebSocketFrame) o;
-            System.out.println("received text: " + request.text());
+            log.info("收到信息：{}",request.text());
+            Action action;
+            try {
+                action = JSONObject.parseObject(request.text(), Action.class);
+            }catch (Exception e){
+                e.printStackTrace();
+                log.error("JSON 对象转换失败");
+                return;
+            }
+
+            // 处理时间
 
         }
     }

@@ -1,5 +1,6 @@
 # easy_im
 
+## 启动报错:chat-client.jar中没有主清单属性
 普通maven项目
 java -jar 启动报错
 chat-client.jar中没有主清单属性
@@ -20,3 +21,6 @@ chat-client.jar中没有主清单属性
 
 maven-jar-plugin插件中增加配置
 ```
+
+
+## server、client模块分别启动时，居然会加载对方的方法

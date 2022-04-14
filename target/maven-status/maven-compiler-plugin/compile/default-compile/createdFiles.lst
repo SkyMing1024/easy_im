@@ -1,1 +1,7 @@
 com/sky/easyIM/ClientApplication.class
+com/sky/easyIM/client/WebSocketClient.class
+com/sky/easyIM/client/Client.class
+com/sky/easyIM/client/WebSocketClient$1.class
+com/sky/easyIM/client/Client$1.class
+com/sky/easyIM/client/WebSocketClient$WebSocketHandler.class
+com/sky/easyIM/client/Client$WebSocketHandler.class

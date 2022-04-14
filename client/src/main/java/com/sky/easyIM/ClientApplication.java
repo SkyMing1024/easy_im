@@ -1,8 +1,12 @@
 package com.sky.easyIM;
 
+import com.sky.easyIM.client.Client;
 import com.sky.easyIM.client.WebSocketClient;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.Scanner;
 
@@ -10,11 +14,12 @@ import java.util.Scanner;
  * Hello world!
  *
  */
-public class ClientApplication implements CommandLineRunner {
+@SpringBootApplication
+public class ClientApplication  implements CommandLineRunner{
 
     WebSocketClient client;
     public static void main( String[] args ) {
-        System.out.println( "Hello Client!" );
+        new SpringApplication(ClientApplication.class).run(args);
     }
 
     @Override
@@ -23,7 +28,7 @@ public class ClientApplication implements CommandLineRunner {
     }
 
     private void connect(){
-        URI uri = URI.create("");
+        URI uri = URI.create("ws://localhost:8081/chat");
         this.client = new WebSocketClient(uri);
         this.client.connect();
     }
