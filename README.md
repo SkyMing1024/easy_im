@@ -23,4 +23,3 @@ maven-jar-plugin插件中增加配置
 ```
 
 
-## server、client模块分别启动时，居然会加载对方的方法
